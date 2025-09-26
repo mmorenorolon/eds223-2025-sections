@@ -1,0 +1,50 @@
+---
+title: "paper"
+author: "Melannie"
+format: html
+---
+
+# Read in the data
+
+```{r}
+gdw <- read_csv(here("data", "gdw.csv"), na = c("", "NA"))
+
+gdw <- gdw %>%  clean_names()
+```
+
+```{r}
+gdw_10 <- head(gdw, 10) #extract the first ten rows of the dataset
+```
+
+```{r}
+kable(gdw_10)
+```
+
+```{r}
+print(colnames(gdw))
+print(dim(gdw))
+```
+```{r}
+gdw %>% group_by('dam_type') %>% 
+  summarise(num_dam = count(na.rm = TRUE)) %>% 
+  ungroup()
+```
+
+```{r}
+sub_dam <- gdw %>% filter(dam_type == "Dam")
+```
+
+```{r}
+gdw %>% arrange(year_txt)
+```
+
+```{r}
+gdw_bar <- gdw %>% group_by(country) %>% 
+  summarise(avg_dam_hgt_m = round(mean(dam_hgt_m, na.rm = TRUE), 2))
+```
+
+```{r}
+ggplot(gdw_bar, aes(x = country)) +
+  geom_bar()
+```
+
