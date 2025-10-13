@@ -1,5 +1,109 @@
 ---
 title: "Discussion_week2"
 format: html
+editor_options: 
+  chunk_output_type: console
 ---
+
+```{r}
+library(tidyverse)
+library(sf)
+library(tmap)
+```
+
+```{r}
+col <- st_read(here::here("data", "Colombia", "Colombia", "Colombia.shp"))
+
+roads <- st_read(here::here("data", "RDLINE_colombia", "RDLINE_colombia", "RDLINE_colombia.shp"))
+
+aves <- read_csv(here::here("data", "dataves.csv")) |> 
+  as_tibble() |> 
+  rename(long = decimal_longitude,
+         lat = decimal_latitude) |> 
+  st_as_sf(coords = c("long", "lat"), crs = 4326)
+```
+
+```{r}
+# View class of each object
+class(col)
+class(roads)
+class(aves)
+
+# View geometry type of each object
+unique(st_geometry_type(col))
+unique(st_geometry_type(roads))
+unique(st_geometry_type(aves))
+```
+
+```{r}
+col_guayanan <- col |>
+  # Set categorical "levels" in attribute N1_MacroBi (subregions of Colombia)
+  mutate(N1_MacroBi = as.factor(N1_MacroBi)) |>
+  # Subset to Andean region of Colombia
+  filter(N1_MacroBi == "Orinoco Guayanan")
+```
+
+```{r}
+tm_shape(col_guayanan) +
+  tm_polygons() +
+  tm_title("Orinoco Guayanan Region of Colombia")
+```
+
+```{r}
+# View CRS of each object
+st_crs(col)
+st_crs(roads)
+st_crs(aves)
+
+# View units of each object CRS 
+st_crs(col)$units
+st_crs(roads)$units
+st_crs(aves)$units
+```
+
+#### Scenario: Team doesn't want shp, just csv, but you worked with shp
+Why? So we can save it in a non-spatially enabled dataframe. 
+
+Use this method if using the '|>' operator
+```{r}
+aves_df_purrr <- aves |>
+  # Extract lat & long from geometry column
+  mutate(lon = unlist(purrr::map(aves$geometry, 1)), # longitude = first component (x)
+         lat = unlist(purrr::map(aves$geometry, 2))) |> # latitude = second component (y)
+  st_drop_geometry() # Remove geometry column now that it's redundant
+```
+
+Use this method if you are using the ' %>% ' operator
+```{r}
+# aves_df_st_coords <- aves %>%
+#   dplyr::mutate(lon = st_coordinates(.)[,1], # Assign first matrix item to "lon"
+#                 lat = st_coordinates(.)[,2])  %>% # Assign second matrix item to "lat"
+#   st_drop_geometry() # Remove geometry column now that it's redundant
+```
+
+```{r}
+aves_df_purrr <- aves |>
+  st_as_sf(coords = c("lon", "lat"), crs = 4326)
+```
+
+#5. Make a map
+```{r}
+# Boolen check if CRS match between 2 datasets
+st_crs(col) == st_crs(roads) #TRUE
+```
+
+```{r}
+# Transform bird observation dataset into same CRS as other Colombia dataset
+aves <- st_transform(aves, crs = st_crs(col))
+```
+
+```{r}
+tm_shape(col) +
+  tm_polygons() +
+tm_shape(roads) +
+  tm_lines(col = "yellow") +
+tm_shape(aves) +
+  tm_dots(fill = "red") +
+  tm_title("Colombia ecoregions, roads,\nand bird observations")
+```
 
