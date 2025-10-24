@@ -1,0 +1,139 @@
+---
+title: "discussion_week4"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+# Practice Raster Manipulations
+
+```{r}
+library(tidyverse)
+library(spData)
+library(spDataLarge)
+library(sf)
+library(stars)
+library(terra)
+```
+
+```{r}
+# Digital elevation model (DEM) of Mt. Mongón, Perú
+dem <- terra::rast(system.file("raster/dem.tif", package = "spDataLarge"))
+
+# Landsat image of Zion National Park
+landsat <- terra::rast(system.file("raster/landsat.tif", package = "spDataLarge"))
+
+# SRTM elevation of Zion National Park
+srtm <- terra::rast(system.file("raster/srtm.tif", package = "spDataLarge"))
+```
+
+
+## Explore Elevation at Mt. Mongón Perú
+```{r}
+# Make a boxplot and histogram of elevation at Mt. Mongón, Perú
+hist(dem, main = "Histogram", xlab = "Value") 
+
+boxplot(dem, main = "Boxplot", xlab = "Value")
+```
+
+## Reclassify dem and compute the mean for the three classes:
+- Low, where elevation is less than 300
+- Medium
+- High, where elevation is greater than 500
+
+```{r}
+# Reclassify dem
+# create reclassification matrix
+rcl <- matrix(c(-Inf, 300, 1, # Low
+              300,500, 2, # Medium
+              500, Inf, 3), # High
+              ncol = 3, byrow = TRUE)
+
+# use reclassification matrix to reclassify elevation raster
+reclassified <- classify(dem, rcl = rcl)
+
+# Assign labels to the numerical categories
+table1 <- tibble::tibble(id = 1:3, cats = c("low", "medium", "high"))
+levels(reclassified) <- table1
+
+# Better method ^
+# levels(reclassified) <- tibble::tibble(id = 1:3, cats = c("low", "medium", "high"))
+
+# Compute the mean of the three classes
+elevation_mean <-  zonal(dem, reclassified, fun = mean)
+```
+
+
+## Explore NDVI and NDWI at Zion National Park
+```{r}
+# reclassify erroneous values as NA
+scale_factor <- 0.0001
+offset <- 0
+
+scale_function <- function(x) {
+  x * scale_factor + offset
+}
+
+landsat_scaled <- terra::app(landsat, fun = scale_function)
+```
+
+```{r}
+ndwi_fun <- function(green, nir){
+    (green - nir)/(green + nir)
+}
+
+ndvi_fun <- function(nir, red){
+  (nir - red)/(nir + red)
+}
+```
+
+```{r}
+ndwi_rast <- terra::lapp(landsat_scaled[[c(2, 4)]],
+                         fun = ndwi_fun)
+
+ndvi_rast <- terra::lapp(landsat_scaled[[c(4, 3)]],
+                         fun = ndvi_fun)
+```
+
+```{r}
+plot(ndwi_rast,
+     main = "Zion National Park NDWI")
+```
+
+```{r}
+plot(ndvi_rast,
+     main = "Zion National Park NDVI")
+```
+
+```{r}
+combine <- c(ndvi_rast, ndwi_rast) # Stack rasters
+
+plot(combine, main = c("NDVI", "NDWI")) # Plot
+```
+
+```{r}
+# Calculate correlation between raster layers 
+terra::layerCor(combine, fun = cor)
+```
+
+## Change resolution of elevation at Zion National Park
+
+```{r}
+plot(srtm)
+
+rast_template <- terra::rast(terra::ext(srtm), res = 0.01) # Create empty template
+
+srtm_resampl1 <- terra::resample(srtm, y = rast_template, method = "bilinear")
+srtm_resampl2 <- terra::resample(srtm, y = rast_template, method = "near")
+srtm_resampl3 <- terra::resample(srtm, y = rast_template, method = "cubic")
+srtm_resampl4 <- terra::resample(srtm, y = rast_template, method = "cubicspline")
+srtm_resampl5 <- terra::resample(srtm, y = rast_template, method = "lanczos")
+```
+
+```{r}
+srtm_resampl_all <- c(srtm_resampl1, srtm_resampl2, srtm_resampl3, srtm_resampl4, srtm_resampl5)
+labs <- c("Bilinear", "Near", "Cubic", "Cubic Spline", "Lanczos")
+
+plot(srtm_resampl_all, main = labs)
+```
+
