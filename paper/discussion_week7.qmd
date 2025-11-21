@@ -219,3 +219,13 @@ climate_envelope <- function(clim_rast, clim_var1, clim_var2, occurences, specie
 }
 ```
 
+```{r}
+climate_envelope(clim_rast = bioclim_rast,
+                 clim_var1 = "annualPrecip",
+                 clim_var2 = "annualMeanTemp",
+                 occurences = tule_elk, 
+                 species_name = "Tule Elk")
+
+tule_elk_map_1
+```
+
