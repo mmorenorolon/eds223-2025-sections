@@ -1,0 +1,75 @@
+---
+title: "discussion_week8"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(terra)
+library(sf)
+library(tidyverse)
+library(here)
+library(tmap)
+```
+
+```{r}
+ndvi_fun <- function(nir, red){
+  (nir - red) / (nir + red)
+}
+```
+
+```{r}
+landsat_20180612 <- rast(here("data", "week8", "landsat_20180612.tif"))
+```
+
+```{r}
+names(landsat_20180612) <- c(c("blue", "green", "red", "NIR", "SWIR1", "SWIR2"))
+```
+
+```{r}
+ndvi_20180612 <- lapp(landsat_20180612[[c(4, 3)]], fun = ndvi_fun)
+```
+
+```{r}
+tm_shape(ndvi_20180612) +
+  tm_raster(col.legend  = tm_legend("NDVI")) +
+  tm_layout(legend.outside.position = "right")
+```
+
+```{r}
+rm(list) = ls()
+```
+
+
+# Create a generalizable function
+```{r}
+ndvi_fun <- function(nir, red){
+  (nir - red) / (nir + red)
+}
+```
+
+```{r}
+compute_ndvi <- fun(landsat) {
+   for i in landsat:
+     landsat <- names(c("blue", "green", "red", "NIR", "SWIR1", "SWIR2"))
+     ndvi <- lapp(landsat[[c(4, 3)]], fun = ndvi_fun)
+     
+     tm_shape(ndvi) +
+       tm_raster(col.legend  = tm_legend("NDVI")) +
+       tm_layout(legend.outside.position = "right")
+     }
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+find_ndvi
+```
+
+
+
